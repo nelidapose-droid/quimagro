@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuimAgro</title>
+<meta name="theme-color" content="#15795F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="QuimAgro">
+<style>
+  :root{
+    --ink:#16241E; --paper:#F1F3EE; --paper-2:#E7EAE2;
+    --primary:#15795F; --primary-dk:#0F5B47; --clay:#C2683C;
+    --ok:#2E9E5B; --ok-bg:#E2F3E7; --no:#D7493A; --no-bg:#FBE6E2;
+    --lock:#AEB8B0; --line:#D3DAD2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{background:#cdd3cb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;min-height:100vh}
+  #app{width:100%;max-width:412px;height:100vh;max-height:880px;background:var(--paper);
+    position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+  @media(min-width:430px){ #app{border-radius:34px;height:88vh} }
+
+  .topbar{display:flex;align-items:center;gap:10px;padding:14px 18px 10px;
+    border-bottom:1px solid var(--line);background:var(--paper);flex-shrink:0}
+  .pill{display:flex;align-items:center;gap:5px;font-weight:600;font-size:15px}
+  .pill .ico{font-size:17px}
+  .pill.streak{color:var(--clay)} .pill.xp{color:var(--primary)} .pill.heart{color:var(--no)}
+  .brand{font-family:Georgia,'Times New Roman',serif;font-weight:600;font-size:20px;letter-spacing:-.5px;margin-right:auto}
+  .brand b{color:var(--primary)}
+
+  .screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pad{padding:18px 18px 96px}
+  .eyebrow{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;font-weight:600;
+    letter-spacing:1.5px;text-transform:uppercase;color:var(--primary);margin-bottom:4px}
+  .h-title{font-family:Georgia,'Times New Roman',serif;font-weight:600;font-size:26px;line-height:1.1;letter-spacing:-.5px}
+  .note{margin:14px 0 22px;padding:12px 14px;border-radius:14px;background:#FBF6E9;
+    border:1px dashed #D9C58E;font-size:13px;line-height:1.45;color:#5b5230}
+  .note b{color:#8a6d1f}
+
+  .path{position:relative;padding:6px 0 10px}
+  .node-row{display:flex;justify-content:center;position:relative;padding:13px 0}
+  .node-row::before{content:"";position:absolute;top:-13px;bottom:-13px;left:50%;width:4px;
+    background:var(--line);transform:translateX(-50%);z-index:0}
+  .node-row:first-child::before{top:50%} .node-row:last-child::before{bottom:50%}
+  .node{position:relative;z-index:1;width:130px;text-align:center;cursor:pointer;background:transparent;border:none}
+  .node[disabled]{cursor:default}
+  .disc{width:74px;height:74px;border-radius:22px;margin:0 auto 7px;display:flex;align-items:center;
+    justify-content:center;font-size:30px;color:#fff;font-weight:700;border:3px solid rgba(0,0,0,.08);
+    box-shadow:0 4px 0 rgba(0,0,0,.14);transition:transform .12s ease}
+  .node:not([disabled]):active .disc{transform:translateY(2px)}
+  .disc.done{background:var(--primary)}
+  .disc.active{background:var(--clay);animation:pulse 1.8s infinite}
+  .disc.soon{background:#DCE0D9;color:var(--lock);box-shadow:0 4px 0 #c7cdc4;opacity:.6;filter:grayscale(.5)}
+  .disc.play{position:relative}
+  .disc.play::after{content:"\25B6";position:absolute;bottom:-4px;right:-4px;font-size:11px;
+    background:#fff;color:var(--primary);width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  @keyframes pulse{0%,100%{box-shadow:0 4px 0 rgba(0,0,0,.14)}
+    50%{box-shadow:0 4px 0 rgba(0,0,0,.14),0 0 0 7px rgba(194,104,60,.18)}}
+  .node-lbl{font-size:12.5px;font-weight:600;line-height:1.2}
+  .node.is-soon .node-lbl{color:#97a199}
+  .node-sub{font-size:10.5px;color:#6c7770;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;margin-top:2px}
+  .offset-l{transform:translateX(-54px)} .offset-r{transform:translateX(54px)}
+
+  .start-cta{position:absolute;left:18px;right:18px;bottom:16px;background:var(--clay);color:#fff;
+    border:none;padding:16px;border-radius:16px;font-weight:700;font-size:16px;
+    letter-spacing:.3px;box-shadow:0 4px 0 #9c5230;cursor:pointer}
+  .start-cta:active{transform:translateY(2px);box-shadow:0 2px 0 #9c5230}
+
+  .lesson-top{display:flex;align-items:center;gap:12px;padding:14px 18px 6px;flex-shrink:0}
+  .xclose{background:none;border:none;font-size:24px;color:#9aa49c;cursor:pointer;line-height:1}
+  .prog-track{flex:1;height:14px;background:var(--paper-2);border-radius:20px;overflow:hidden}
+  .prog-fill{height:100%;background:var(--primary);border-radius:20px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+  .lives{display:flex;gap:3px;color:var(--no);font-size:16px}
+  .lives .dead{color:#D5DBD4}
+
+  .q-area{padding:8px 20px 20px}
+  .q-kind{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:11px;font-weight:600;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--clay);margin:10px 0 6px}
+  .q-text{font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:600;line-height:1.3;letter-spacing:-.3px}
+  .q-context{margin:12px 0;padding:13px 15px;border-radius:14px;background:#fff;border:1px solid var(--line);
+    font-size:14px;line-height:1.5}
+  .q-context .data{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-weight:600;color:var(--primary-dk)}
+
+  .opts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .opt{background:#fff;border:2px solid var(--line);border-bottom-width:4px;border-radius:15px;padding:15px 16px;
+    font-size:15px;font-weight:500;text-align:left;cursor:pointer;color:var(--ink);
+    transition:border-color .1s, background .1s}
+  .opt:active{transform:translateY(1px)}
+  .opt.sel{border-color:var(--primary);background:#E9F4F0}
+  .opt.correct{border-color:var(--ok);background:var(--ok-bg)}
+  .opt.wrong{border-color:var(--no);background:var(--no-bg)}
+  .opt .tag{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;color:#8a948c;margin-right:8px}
+
+  .numwrap{margin-top:18px;display:flex;align-items:stretch;gap:10px}
+  .numwrap input{flex:1;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:22px;font-weight:600;padding:14px 16px;
+    border:2px solid var(--line);border-bottom-width:4px;border-radius:15px;background:#fff;color:var(--ink);min-width:0}
+  .numwrap input:focus{outline:none;border-color:var(--primary)}
+  .unit-badge{display:flex;align-items:center;padding:0 16px;border-radius:15px;background:var(--paper-2);
+    font-weight:600;font-size:16px;color:#5b665e;white-space:nowrap}
+
+  .curve-wrap{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 8px 4px}
+  .curve-hint{font-size:12px;color:#6c7770;text-align:center;margin-top:2px}
+
+  .footer{flex-shrink:0;border-top:1px solid var(--line);background:var(--paper);
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom))}
+  .fb{border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13.5px;line-height:1.45;display:none}
+  .fb.show{display:block;animation:rise .25s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .fb.ok{background:var(--ok-bg);color:#1d6b3c} .fb.no{background:var(--no-bg);color:#9c2c20}
+  .fb .head{font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:3px;font-size:15px}
+  .fb .why b{font-weight:600}
+  .btn{width:100%;border:none;border-radius:15px;padding:15px;font-weight:700;
+    font-size:16px;letter-spacing:.3px;cursor:pointer;color:#fff}
+  .btn.check{background:var(--primary);box-shadow:0 4px 0 var(--primary-dk)}
+  .btn.check:disabled{background:#C2CBC4;box-shadow:0 4px 0 #aab4ac;cursor:not-allowed}
+  .btn.next-ok{background:var(--ok);box-shadow:0 4px 0 #1f7a44}
+  .btn.next-no{background:var(--no);box-shadow:0 4px 0 #a8362a}
+  .btn:not(:disabled):active{transform:translateY(2px);box-shadow:0 2px 0 var(--primary-dk)}
+
+  .summary{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:30px}
+  .sum-title{font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:600;letter-spacing:-.5px}
+  .sum-sub{color:#5d685f;font-size:15px;margin:6px 0 26px}
+  .stat-row{display:flex;gap:12px;width:100%;max-width:320px;margin-bottom:28px}
+  .stat{flex:1;border-radius:16px;padding:14px 8px;border:2px solid var(--line);background:#fff}
+  .stat .v{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:24px;font-weight:600}
+  .stat .l{font-size:11px;color:#6c7770;text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
+  .stat.xp .v{color:var(--primary)} .stat.acc .v{color:var(--clay)} .stat.hp .v{color:var(--no)}
+  .gameover{color:var(--no)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">Quim<b>Agro</b></div>
+    <div class="pill streak"><span class="ico">&#128293;</span><span id="streak">0</span></div>
+    <div class="pill xp"><span class="ico">&#9889;</span><span id="xptop">0</span></div>
+    <div class="pill heart"><span class="ico">&#10084;</span><span id="hptop">5</span></div>
+  </div>
+
+  <!-- MAP -->
+  <div class="screen" id="screen-map">
+    <div class="pad">
+      <div class="eyebrow">Introducción a la Química · práctica libre</div>
+      <div class="h-title">Ruta de la materia</div>
+      <div class="note">
+        <b>Práctica libre:</b> tocá cualquier unidad para practicar, en el orden que quieras.
+        Cada una sigue la Guía de Trabajos Prácticos de la cátedra. Tu progreso se guarda en este dispositivo.
+      </div>
+      <div class="path" id="path"></div>
+    </div>
+    <button class="start-cta" id="cta" onclick="startLesson('ph')">Sugerido hoy · Cálculo de pH</button>
+  </div>
+
+  <!-- LESSON -->
+  <div class="screen hidden" id="screen-lesson" style="display:flex;flex-direction:column">
+    <div class="lesson-top">
+      <button class="xclose" onclick="quitLesson()">&times;</button>
+      <div class="prog-track"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+      <div class="lives" id="lives"></div>
+    </div>
+    <div class="q-area" id="qArea" style="flex:1;overflow-y:auto"></div>
+    <div class="footer">
+      <div class="fb" id="fb"></div>
+      <button class="btn check" id="actionBtn" onclick="onAction()" disabled>Comprobar</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="screen hidden" id="screen-sum"><div class="summary" id="sumInner"></div></div>
+</div>
+
+<script>
+/* ===================== UNIDADES (Guía TP 2026, sin Conceptos básicos) ===================== */
+const UNITS = [
+  {id:'uq',  name:'Uniones · geometría',  sub:'TP 2 · jugar', icon:'\u269B', status:'play'},
+  {id:'gas', name:'Estado gaseoso',       sub:'TP 3 · jugar', icon:'\uD83C\uDF2C', status:'play'},
+  {id:'tq',  name:'Termoquímica',         sub:'TP 4 · jugar', icon:'\uD83D\uDD25', status:'play'},
+  {id:'sol', name:'Concentración',        sub:'TP 5a · jugar',icon:'\uD83E\uDDEA', status:'play'},
+  {id:'slb', name:'Solubilidad',          sub:'TP 5b · jugar',icon:'\uD83D\uDCC8', status:'play'},
+  {id:'eq',  name:'Equilibrio químico',   sub:'TP 6 · jugar', icon:'\u2696', status:'play'},
+  {id:'ph',  name:'Cálculo de pH',        sub:'TP 7 · jugar', icon:'\uD83D\uDCA7', status:'play'},
+  {id:'rdx', name:'Redox',                sub:'TP 8 · jugar', icon:'\u26A1', status:'play'},
+  {id:'cel', name:'Celdas electroquím.',  sub:'TP 9 · jugar', icon:'\uD83D\uDD0B', status:'play'},
+];
+
+/* ===================== CONTENIDO (extraído de la Guía de TP) ===================== */
+const QUESTIONS = {
+  /* ---------- ESTADO GASEOSO ---------- */
+  gas:[
+    { kind:'mc', label:'Concepto',
+      text:'¿Cuál es la ecuación de los gases ideales?',
+      options:['P · V = n · R · T','P / V = n · R · T','P · V = n · R / T','P = n · R · T · V'],
+      answer:0,
+      why:'<b>P·V = n·R·T</b>. Con R = 0,082 L·atm/(mol·K), P va en atm, V en L y T en <b>kelvin</b>.' },
+    { kind:'num', label:'Unidades',
+      text:'En PV = nRT la temperatura SIEMPRE va en kelvin.',
+      context:'Un silo experimental está a <span class="data">27 °C</span>. ¿Cuántos K son?',
+      unit:'K', answer:300, tol:0.5,
+      why:'K = °C + 273 → 27 + 273 = <b>300 K</b>. Olvidar este pasaje es el error que más “rompe” los problemas de gases.' },
+    { kind:'mc', label:'Mezclas de gases',
+      text:'En una mezcla de gases ideales (ley de Dalton), la presión total es…',
+      options:['la suma de las presiones parciales','el promedio de las presiones parciales',
+               'la presión del gas más abundante','la del gas de mayor masa molar'],
+      answer:0,
+      why:'Ley de Dalton: P<sub>total</sub> = ΣP<sub>i</sub>. Cada gas aporta su <b>presión parcial</b>; se suman.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué significa que un gas esté en CNPT (condiciones normales de presión y temperatura)?',
+      options:['1 atm y 0 °C (273 K)','1 atm y 25 °C','760 atm y 0 °C','Presión y temperatura ambiente'],
+      answer:0,
+      why:'CNPT = <b>1 atm y 273 K (0 °C)</b>. En esas condiciones, 1 mol de gas ideal ocupa 22,4 L: el “volumen molar”.' },
+    { kind:'mc', label:'Concepto',
+      text:'Dos recipientes iguales, a igual P y T, contienen uno CO₂ y otro CH₄. ¿Cuál tiene más moléculas?',
+      options:['Tienen la misma cantidad de moléculas','El de CO₂, porque pesa más','El de CH₄, porque es más liviano','No se puede saber'],
+      answer:0,
+      why:'Principio de Avogadro: a igual <b>V, P y T</b>, igual número de moléculas, sin importar cuál sea el gas. Lo que cambia es la <b>masa</b>, no la cantidad.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿En qué condiciones un gas real se aleja MÁS del comportamiento ideal?',
+      options:['Alta presión y baja temperatura','Baja presión y alta temperatura','Siempre se comporta igual','Solo si es un gas noble'],
+      answer:0,
+      why:'A <b>alta P y baja T</b> las moléculas están cerca y lentas: pesan el volumen propio y las fuerzas intermoleculares, que el modelo ideal desprecia.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · gas del suelo',
+      text:'Un agrónomo recolecta un gas liberado por el suelo y mide su masa molar para identificarlo.',
+      context:'Recipiente: <span class="data">250 mL</span> · <span class="data">760 torr</span> (= 1 atm) · <span class="data">25 °C</span> · masa = <span class="data">0,164 g</span>.<br>Paso 1: pasá la temperatura a kelvin.',
+      unit:'K', answer:298, tol:0.5,
+      why:'25 + 273 = <b>298 K</b>. Antes de la fórmula, ordenás unidades: V = 0,250 L, P = 1 atm, T = 298 K.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · gas del suelo',
+      text:'Calculá los moles de gas con n = P·V / (R·T).',
+      context:'<span class="data">P = 1 · V = 0,250 · R = 0,082 · T = 298</span><br><span style="font-size:12.5px;color:#6c7770">n = (1 × 0,250) / (0,082 × 298)</span>',
+      unit:'mol', answer:0.0102, tol:0.0005,
+      why:'n = 0,250 / 24,44 = <b>0,0102 mol</b>. Con los moles y la masa sacás la masa molar.' },
+    { kind:'mc', label:'Problema · gas del suelo',
+      text:'Masa molar = masa / moles = 0,164 / 0,0102 ≈ 16 g/mol. ¿Qué gas es?',
+      context:'Masas molares (g/mol): CO₂ = 44 · NH₃ = 17 · CH₄ = 16 · O₂ = 32',
+      options:['Metano (CH₄) — suelos anegados','Dióxido de carbono (CO₂) — respiración microbiana',
+               'Amoníaco (NH₃) — fertilización','Oxígeno (O₂)'],
+      answer:0,
+      why:'≈16 g/mol → <b>metano (CH₄)</b>, típico de suelos anegados. Identificaste el gas calculando su masa molar.' },
+  ],
+
+  /* ---------- SOLUCIONES: CONCENTRACIÓN ---------- */
+  sol:[
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué expresa la molaridad (M) de una solución?',
+      options:['Moles de soluto por litro de solución','Gramos de soluto por litro de solvente',
+               'Moles de soluto por kilo de solvente','Volumen de soluto sobre volumen de solución'],
+      answer:0,
+      why:'Molaridad = mol de soluto / L de <b>solución</b> (no de solvente). Confundir “solución” con “solvente” es de los errores más frecuentes.' },
+    { kind:'mc', label:'Concepto',
+      text:'Si a una solución le agregás solo AGUA, ¿qué pasa con los moles de soluto y con la molaridad?',
+      options:['Moles iguales, molaridad baja','Moles bajan, molaridad igual','Ambos bajan','Ambos quedan igual'],
+      answer:0,
+      why:'Diluir <b>no saca soluto</b>: n constante. Pero V aumenta → M = n/V <b>disminuye</b>. Esta idea es la base de M₁V₁ = M₂V₂.' },
+    { kind:'num', label:'Expresiones físicas · % m/m',
+      text:'Se disuelven 45 g de ioduro de potasio en 80 g de agua. ¿Cuál es el % m/m?',
+      context:'%m/m = masa de soluto / masa de solución × 100<br><span style="font-size:12.5px;color:#6c7770">masa de solución = soluto + solvente</span>',
+      unit:'%', answer:36, tol:0.5,
+      why:'45 / (45 + 80) × 100 = 45/125 × 100 = <b>36 %</b>. El denominador es la masa total, no solo el agua.' },
+    { kind:'num', label:'Expresiones físicas · g/100 g solvente',
+      text:'La MISMA solución (45 g de KI en 80 g de agua), expresada en g de soluto cada 100 g de SOLVENTE, ¿cuánto da?',
+      context:'Regla de tres: si en <span class="data">80 g</span> de agua hay <span class="data">45 g</span> de soluto, en 100 g de agua hay…',
+      unit:'g/100 g', answer:56.25, tol:0.5,
+      why:'45 × 100 / 80 = <b>56,25 g/100 g de solvente</b>. Misma solución, número distinto que el %m/m (36): por eso SIEMPRE hay que mirar la base de cálculo.' },
+    { kind:'num', label:'Expresiones físicas · ppm',
+      text:'Una solución de cobre para uso hortícola tiene 0,454 g de Cu por litro. Expresala en ppm (mg/L).',
+      context:'<span class="data">1 g = 1000 mg</span> · ppm en soluciones acuosas diluidas ≈ mg/L',
+      unit:'ppm', answer:454, tol:2,
+      why:'0,454 g/L × 1000 = <b>454 ppm</b>. Como el umbral fitotóxico del Cu ronda 0,3 ppm, esta solución concentrada jamás se aplica directa: se dosifica.' },
+    { kind:'num', label:'Expresiones físicas · mezclas',
+      text:'En un vivero se mezclan 200 g de solución de urea al 10 % m/m con 300 g de solución al 4 % m/m. ¿Cuál es el % m/m final?',
+      context:'Soluto total = <span class="data">200×0,10 + 300×0,04</span> · masa total = <span class="data">500 g</span>',
+      unit:'%', answer:6.4, tol:0.1,
+      why:'(20 + 12) / 500 × 100 = <b>6,4 % m/m</b>. Se suman las masas de soluto, nunca se promedian los porcentajes directamente.' },
+    { kind:'num', label:'Expresiones físicas · % m/V',
+      text:'Para suplementación bovina se disuelven 150 g de NaCl en 350 g de agua. La densidad final es 1,15 g/mL. ¿Cuál es el % m/V?',
+      context:'Volumen de solución = masa total / densidad = <span class="data">500 / 1,15</span> mL · %m/V = g soluto / 100 mL',
+      unit:'% m/V', answer:34.5, tol:0.5,
+      why:'V = 500/1,15 = 434,8 mL → 150/434,8 × 100 = <b>34,5 % m/V</b>. El %m/V necesita la <b>densidad</b> para pasar de masa a volumen: sin ella no se puede.' },
+    { kind:'mc', label:'Contexto agronómico',
+      text:'El KCl es fuente de potasio en fertirriego. ¿Cuál es su masa molar aproximada?',
+      context:'Datos: K = 39,1 · Cl = 35,45 (g/mol)',
+      options:['74,55 g/mol','39,10 g/mol','35,45 g/mol','110,0 g/mol'],
+      answer:0,
+      why:'M(KCl) = 39,10 + 35,45 = <b>74,55 g/mol</b>. Se suman las masas atómicas de la fórmula.' },
+    { kind:'mc', label:'Normalidad · concepto',
+      text:'¿Cómo se relaciona la Normalidad (N) con la Molaridad (M)?',
+      options:['N = M × n° de equivalentes por mol (para H₂SO₄, N = 2M)','N = M ÷ 2 siempre','N y M son lo mismo','N = M × volumen'],
+      answer:0,
+      why:'<b>N = M × equivalentes</b>. El H₂SO₄ aporta 2 H⁺ por mol → N = 2M. Para un ácido con 1 H⁺ (HCl), N = M.' },
+    { kind:'mc', label:'Normalidad',
+      text:'Para una solución de cloruro de aluminio (AlCl₃), su Normalidad será…',
+      options:['Mayor que su Molaridad: N = 3M','Menor que su Molaridad','Igual a su Molaridad','No se puede calcular para sales'],
+      answer:0,
+      why:'El Al³⁺ aporta <b>3 cargas positivas</b> por fórmula → 3 equivalentes/mol → <b>N = 3M</b>. En sales, los equivalentes se cuentan por la carga total positiva.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · M y N del sulfato de calcio',
+      text:'Se disuelven 2,5 g de sulfato de calcio (CaSO₄) en 3 L de solución. Paso 1: ¿cuántos moles de CaSO₄ son?',
+      context:'Masa molar CaSO₄ = <span class="data">136,1 g/mol</span> · n = masa / masa molar',
+      unit:'mol', answer:0.018, tol:0.001,
+      why:'2,5 / 136,1 = <b>0,018 mol</b> (1,84×10⁻²). Primer movimiento de casi todo problema de concentración: pasar a moles.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · M y N del sulfato de calcio',
+      text:'Paso 2: con 0,018 mol en 3 L, la Molaridad es…',
+      options:['0,006 M','0,054 M','0,018 M','0,33 M'],
+      answer:0,
+      why:'M = n/V = 0,018/3 = <b>0,006 M</b>. Acordate de dividir por el volumen TOTAL de solución.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · M y N del sulfato de calcio',
+      text:'Cerrá el problema: el Ca²⁺ aporta 2 cargas. ¿Cuál es la Normalidad?',
+      context:'N = M × equivalentes = <span class="data">0,006 × 2</span>',
+      unit:'N', answer:0.012, tol:0.001,
+      why:'N = 0,006 × 2 = <b>0,012 N</b>. La Normalidad “pesa” la capacidad de reacción: un mol de CaSO₄ neutraliza el doble que un mol de sal monovalente.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · urea fertirriego',
+      text:'En un vivero preparás 2,0 L de solución de urea CO(NH₂)₂ 0,50 M.',
+      context:'Paso 1: ¿cuántos <span class="data">moles</span> de urea necesitás?<br><span style="font-size:12.5px;color:#6c7770">Pista: n = M · V</span>',
+      unit:'mol', answer:1.0, tol:0.02,
+      why:'n = M · V = 0,50 × 2,0 = <b>1,0 mol</b>. Es el puente entre “lo que preparás” y “lo que pesás”.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · urea fertirriego',
+      text:'Pasá de moles a gramos. ¿Cuál es la masa molar de la urea CO(NH₂)₂?',
+      context:'Datos: C=12,0 · O=16,0 · N=14,0 · H=1,0 (g/mol)',
+      options:['60,0 g/mol','46,0 g/mol','28,0 g/mol','17,0 g/mol'],
+      answer:0,
+      why:'C(12) + O(16) + 2·N(28) + 4·H(4) = <b>60,0 g/mol</b>. Ojo: hay 2 N y 4 H en los dos grupos NH₂.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · urea fertirriego',
+      text:'Cerrá el problema: ¿cuántos gramos de urea pesás?',
+      context:'Ya sabés: <span class="data">1,0 mol</span> y masa molar <span class="data">60,0 g/mol</span>.',
+      unit:'g', answer:60, tol:1,
+      why:'masa = n × masa molar = 1,0 × 60,0 = <b>60 g</b>. Tres pasos sin que te lo den armado: ese es el salto que cuesta.' },
+  ],
+
+  /* ---------- SOLUCIONES: SOLUBILIDAD ---------- */
+  slb:[
+    { kind:'mc', label:'Concepto',
+      text:'Una solución que contiene MENOS soluto del que puede disolver a esa temperatura es…',
+      options:['No saturada','Saturada','Sobresaturada','Coloidal'],
+      answer:0,
+      why:'<b>No saturada</b>: admite más soluto. Saturada = en el límite (sobre la curva). Sobresaturada = por encima del límite, inestable.' },
+    { kind:'curve', label:'Solubilidad · leé la curva',
+      text:'El tanque de fertirriego está a 18 °C. Arrastrá el punto naranja sobre la línea punteada hasta tocar la curva y leé la solubilidad del nitrato de potasio (KNO₃).',
+      points:[[0,13.3],[10,20.9],[20,31.6],[30,45.8],[40,63.9],[50,85.5],[60,110.0]],
+      targetT:18, answer:29.5, tol:3.5, yUnit:'g/100 g', xmax:60, ymax:120,
+      xlabel:'Temperatura (°C)',
+      why:'En la tabla, a 10 °C son 20,9 g y a 20 °C son 31,6 g; interpolando a 18 °C ≈ <b>29–30 g</b>. Leer la curva es <b>estimar entre dos puntos</b>, no buscar un valor exacto.' },
+    { kind:'mc', label:'Concepto',
+      text:'Una solución de urea a 60 °C, preparada justo saturada, se enfría a 20 °C. ¿Qué esperás observar?',
+      options:['Precipita soluto: la solubilidad bajó con la temperatura','Se vuelve más diluida','No pasa nada','El agua se evapora'],
+      answer:0,
+      why:'Al enfriar, la solubilidad de la urea <b>disminuye</b>: el exceso de soluto <b>cristaliza</b>. Riesgo práctico en fertirriego: sales que precipitan tapan goteros.' },
+    { kind:'mc', label:'Gases en agua',
+      text:'A diferencia de las sales, la solubilidad del CO₂ en agua, al AUMENTAR la temperatura…',
+      options:['Disminuye','Aumenta','No cambia','Primero sube y después baja'],
+      answer:0,
+      why:'Los <b>gases se disuelven menos en agua caliente</b> (por eso la gaseosa tibia pierde gas). Lo ves en la curva siguiente.' },
+    { kind:'curve', label:'Solubilidad · leé la curva',
+      text:'Ahora una curva que BAJA: solubilidad del CO₂ en agua. Arrastrá el punto hasta la curva y leé cuánto CO₂ se disuelve a 25 °C.',
+      points:[[0,0.33],[10,0.23],[20,0.17],[30,0.13],[40,0.097],[50,0.076]],
+      targetT:25, answer:0.15, tol:0.03, yUnit:'g/100 g', xmax:60, ymax:0.36, dec:2,
+      xlabel:'Temperatura (°C)',
+      why:'Entre 0,17 (20 °C) y 0,13 (30 °C), a 25 °C ≈ <b>0,15 g/100 g</b> — coincide con la respuesta de la guía. Curva descendente: típica de gases.' },
+    { kind:'scaffold-step', step:'1 de 2', label:'Problema · tanque de fertirriego',
+      text:'Se agregan 75 kg de KNO₃ a un tanque con 500 L de agua a 20 °C (densidad del agua = 1 g/cm³). ¿Cuál es la concentración en g de soluto / 100 g de agua?',
+      context:'<span class="data">75 000 g</span> de sal en <span class="data">500 000 g</span> de agua → llevá a base 100 g.',
+      unit:'g/100 g', answer:15, tol:0.5,
+      why:'75 000 × 100 / 500 000 = <b>15 g/100 g de agua</b>. Primero la concentración real, después se compara con la curva.' },
+    { kind:'scaffold-step', step:'2 de 2', label:'Problema · tanque de fertirriego',
+      text:'Cerrá el problema: la solubilidad del KNO₃ a 20 °C es 31,6 g/100 g, y el tanque tiene 15 g/100 g. La solución es…',
+      options:['No saturada — se disuelve todo, sin sólido en el fondo','Saturada','Sobresaturada','Imposible de determinar'],
+      answer:0,
+      why:'15 < 31,6 → <b>no saturada</b>: todo el fertilizante se disuelve y aún cabe más. Si el agua se enfriara a 0 °C (solubilidad 13,3), parte precipitaría: por eso la temperatura del tanque importa.' },
+  ],
+
+  /* ---------- CÁLCULO DE pH (nuevo · andamiado) ---------- */
+  ph:[
+    { kind:'mc', label:'Concepto',
+      text:'¿Cómo se define el pH de una solución?',
+      options:['pH = −log [H⁺]','pH = log [H⁺]','pH = [H⁺] / [OH⁻]','pH = −log [OH⁻]'],
+      answer:0,
+      why:'<b>pH = −log [H⁺]</b>. Si la concentración de H⁺ aumenta, el pH <b>baja</b> (más ácido).' },
+    { kind:'mc', label:'Fuerza ácido-base',
+      text:'¿Cuál de estas especies es un ácido fuerte (se disocia ~100 %)?',
+      options:['Ácido clorhídrico (HCl)','Ácido carbónico (H₂CO₃)','Ácido sulfhídrico (H₂S)','Amoníaco (NH₃)'],
+      answer:0,
+      why:'<b>HCl</b> es ácido fuerte (disociación total). H₂CO₃ y H₂S son ácidos débiles; NH₃ es una base débil.' },
+    { kind:'mc', label:'Concepto',
+      text:'Un suelo con pH = 5,5 es…',
+      options:['Ácido (pH < 7)','Básico (pH > 7)','Neutro','No se puede saber sin la temperatura'],
+      answer:0,
+      why:'pH < 7 → <b>ácido</b>. Muchos cultivos rinden mejor entre pH 6 y 7; por debajo aparecen problemas de toxicidad por aluminio.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué diferencia a un ácido DÉBIL de uno fuerte, a igual concentración?',
+      options:['Se disocia solo parcialmente: libera menos H⁺','Tiene menor masa molar','Es menos corrosivo siempre','No reacciona con bases'],
+      answer:0,
+      why:'El ácido débil se disocia <b>parcialmente</b> (queda mayormente molecular): a igual concentración, su pH es <b>mayor</b> (menos ácido) que el de un ácido fuerte.' },
+    { kind:'mc', label:'Concepto',
+      text:'Si diluís con agua una solución ácida, su pH…',
+      options:['Sube (se acerca a 7)','Baja','No cambia','Se vuelve mayor que 7'],
+      answer:0,
+      why:'Diluir baja [H⁺] → el pH <b>sube acercándose a 7</b>, pero nunca lo cruza por dilución: una solución ácida no se vuelve básica agregando agua.' },
+    { kind:'num', label:'Relación pH–pOH',
+      text:'A 25 °C se cumple pH + pOH = 14.',
+      context:'Una solución tiene <span class="data">pH = 4,60</span>. ¿Cuál es su pOH?',
+      unit:'pOH', answer:9.40, tol:0.05,
+      why:'pOH = 14 − 4,60 = <b>9,40</b>. Como pH < 7, la solución es ácida.' },
+    { kind:'num', label:'Ácido fuerte',
+      text:'En un ácido fuerte, [H⁺] es igual a la concentración del ácido.',
+      context:'¿Cuál es el pH de una solución de <span class="data">HCl 0,010 M</span>?<br><span style="font-size:12.5px;color:#6c7770">pH = −log [H⁺]</span>',
+      unit:'pH', answer:2, tol:0.1,
+      why:'[H⁺] = 0,010 = 10⁻² → pH = −log(10⁻²) = <b>2</b>.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · encalado de suelo',
+      text:'Para corregir un suelo ácido se aplica cal apagada, Ca(OH)₂. Disuelta en agua, ¿qué solución forma?',
+      options:['Básica — libera iones OH⁻','Ácida — libera iones H⁺','Neutra','Depende de la temperatura'],
+      answer:0,
+      why:'Ca(OH)₂ es una <b>base</b>: aporta OH⁻. Por eso el encalado sube el pH de los suelos ácidos.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · encalado de suelo',
+      text:'La solución de cal tiene [OH⁻] = 0,010 M. Calculá el pOH.',
+      context:'pOH = −log [OH⁻]',
+      unit:'pOH', answer:2, tol:0.1,
+      why:'−log(0,010) = −log(10⁻²) = <b>2</b>.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · encalado de suelo',
+      text:'Cerrá el problema: con pOH = 2, ¿cuál es el pH?',
+      context:'pH + pOH = 14',
+      unit:'pH', answer:12, tol:0.1,
+      why:'pH = 14 − 2 = <b>12</b>. La cal es fuertemente básica: por eso neutraliza la acidez del suelo.' },
+  ],
+
+  /* ---------- UNIONES QUÍMICAS · GEOMETRÍA · FUERZAS ---------- */
+  uq:[
+    { kind:'mc', label:'Tipo de enlace',
+      text:'El enlace C−C en el etano (H₃C−CH₃), ¿cómo se clasifica?',
+      options:['Covalente no polar','Covalente polar','Iónico','Covalente dativo'],
+      answer:0,
+      why:'Dos átomos <b>idénticos</b> comparten electrones por igual: covalente <b>no polar</b>. La diferencia de electronegatividad es cero.' },
+    { kind:'mc', label:'Tipo de enlace',
+      text:'¿Y el enlace Cl−Mg en el cloruro de magnesio?',
+      options:['Iónico','Covalente no polar','Covalente polar','Covalente dativo'],
+      answer:0,
+      why:'Metal + no metal con gran diferencia de electronegatividad: el Mg <b>cede</b> electrones al Cl → enlace <b>iónico</b>.' },
+    { kind:'mc', label:'Fuerzas intermoleculares',
+      text:'¿A qué interacción se la denomina “fuerzas de London”?',
+      options:['Fuerzas de dispersión','Ion-dipolo','Puente hidrógeno','Dipolo-dipolo'],
+      answer:0,
+      why:'London = fuerzas de <b>dispersión</b>: dipolos instantáneos presentes en <b>todas</b> las moléculas, únicas en las no polares.' },
+    { kind:'mc', label:'Propiedades',
+      text:'¿Por qué el amoníaco (NH₃) hierve a mayor temperatura que el metano (CH₄)?',
+      options:['NH₃ forma puente hidrógeno; CH₄ solo dispersión','NH₃ tiene mayor masa molar',
+               'CH₄ es iónico','NH₃ es un gas noble'],
+      answer:0,
+      why:'El N−H permite <b>puente hidrógeno</b>, mucho más fuerte que la dispersión del CH₄ (no polar). Más fuerza intermolecular → mayor punto de ebullición.' },
+    { kind:'mc', label:'Concepto',
+      text:'El trifluoruro de boro (BF₃) tiene solo 6 electrones alrededor del B. ¿Qué ilustra?',
+      options:['Una excepción a la regla del octeto (octeto incompleto)','Que la regla del octeto no existe','Un enlace iónico','Que el B es un gas noble'],
+      answer:0,
+      why:'El B queda con <b>6 electrones</b>: octeto <b>incompleto</b>. La regla del octeto es una guía con excepciones (BF₃, XeF₂ con octeto expandido, etc.).' },
+    { kind:'mc', label:'Geometría',
+      text:'El agua (H₂O) tiene dos pares libres sobre el O. Su geometría molecular es…',
+      options:['Angular — y por eso es polar','Lineal — y por eso es no polar','Tetraédrica perfecta','Piramidal'],
+      answer:0,
+      why:'Los pares libres “empujan” los enlaces O−H: geometría <b>angular</b> (~104,5°). Los dipolos no se cancelan → el agua es <b>polar</b>, y de ahí casi toda su química.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué mide la electronegatividad de un elemento?',
+      options:['Su tendencia a atraer los electrones del enlace','Su masa atómica','Su número de protones','Su estado de agregación'],
+      answer:0,
+      why:'Electronegatividad = capacidad de <b>atraer electrones compartidos</b>. La diferencia de electronegatividad entre dos átomos define si el enlace es no polar, polar o iónico.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · CO₂ vs OCS',
+      text:'El CO₂ y el sulfuro de carbonilo (OCS) tienen estructuras de Lewis similares, pero distinta polaridad. Primero: ¿qué geometría tiene el CO₂ (O=C=O)?',
+      options:['Lineal','Angular','Tetraédrica','Piramidal'],
+      answer:0,
+      why:'El C central tiene 2 grupos de electrones (dos dobles enlaces) y sin pares libres → geometría <b>lineal</b>, ángulo de 180°.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · CO₂ vs OCS',
+      text:'Cada enlace C=O es polar. Siendo lineal y simétrica, ¿la molécula de CO₂ es polar?',
+      options:['No — los dipolos se cancelan','Sí — tiene enlaces polares',
+               'Sí — el O es muy electronegativo','Depende de la temperatura'],
+      answer:0,
+      why:'Los dos dipolos C=O son <b>iguales y opuestos</b>: se cancelan. Enlaces polares ≠ molécula polar; la <b>geometría</b> decide.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · CO₂ vs OCS',
+      text:'Cerrá el problema: ¿por qué el OCS (O=C=S) SÍ es polar?',
+      options:['O y S tienen distinta electronegatividad: los dipolos no se cancelan',
+               'Porque es angular','Porque tiene un par libre en el C','Porque el S es metálico'],
+      answer:0,
+      why:'Misma geometría lineal, pero el dipolo C=O ≠ dipolo C=S (el O atrae más que el S). La resta <b>no da cero</b> → molécula polar. Comparar CO₂ y OCS muestra que polaridad = enlaces <b>+</b> geometría.' },
+  ],
+
+  /* ---------- TERMOQUÍMICA ---------- */
+  tq:[
+    { kind:'mc', label:'Concepto',
+      text:'Una reacción con ΔH° negativo es…',
+      options:['Exotérmica — libera calor','Endotérmica — absorbe calor','Espontánea siempre','Imposible'],
+      answer:0,
+      why:'ΔH < 0 → el sistema <b>libera</b> calor al entorno: <b>exotérmica</b>. (Ojo: el signo de ΔH no alcanza para decidir espontaneidad).' },
+    { kind:'mc', label:'Entropía',
+      text:'Para H₂O (l) → H₂O (g), el cambio de entropía ΔS es…',
+      options:['Positivo — el gas está más desordenado','Negativo — se ordena','Cero','No se puede saber'],
+      answer:0,
+      why:'Líquido → gas <b>aumenta el desorden</b>: ΔS > 0. Regla práctica: más moles de gas → entropía mayor.' },
+    { kind:'mc', label:'Concepto',
+      text:'En una reacción EXOTÉRMICA, el calor fluye…',
+      options:['Del sistema hacia el entorno','Del entorno hacia el sistema','No hay flujo de calor','Solo dentro del sistema'],
+      answer:0,
+      why:'Exo = hacia afuera: el <b>sistema entrega calor al entorno</b> (por eso el recipiente se calienta). En la endotérmica es al revés y el recipiente se enfría.' },
+    { kind:'mc', label:'Concepto',
+      text:'La entalpía H es una “función de estado”. ¿Qué significa?',
+      options:['ΔH depende solo del estado inicial y final, no del camino','Depende de la velocidad de la reacción','Solo se define para gases','Cambia según el catalizador'],
+      answer:0,
+      why:'Función de estado: ΔH es el mismo <b>por cualquier camino</b>. Esa es la base de la ley de Hess, que te permite sumar reacciones para calcular ΔH desconocidos.' },
+    { kind:'mc', label:'Espontaneidad',
+      text:'¿Qué magnitud decide si un proceso es espontáneo a P y T constantes?',
+      options:['ΔG (energía libre de Gibbs) < 0','ΔH < 0 siempre','ΔS > 0 siempre','La velocidad de reacción'],
+      answer:0,
+      why:'<b>ΔG = ΔH − TΔS < 0 ⇔ espontáneo</b>. Ni ΔH ni ΔS alcanzan solos: hay procesos endotérmicos espontáneos (disolver nitratos) gracias al término TΔS.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · biogás del establecimiento',
+      text:'En un establecimiento ganadero se quema biogás (metano de estiércol): CH₄ + 2 O₂ → CO₂ + 2 H₂O(l), ΔH° = −890 kJ. Si se quema la MITAD (½ CH₄ + O₂ → ½ CO₂ + H₂O), ¿cuál es el ΔH°?',
+      options:['−445 kJ','−890 kJ','−1780 kJ','+445 kJ'],
+      answer:0,
+      why:'ΔH es <b>extensiva</b>: la mitad de reacción libera la mitad del calor → −890/2 = <b>−445 kJ</b>.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · biogás del establecimiento',
+      text:'Ahora considerá la reacción INVERSA: CO₂ + 2 H₂O(l) → CH₄ + 2 O₂. ¿Cuál es su ΔH° en kJ?',
+      context:'Dato: la reacción directa CH₄ + 2 O₂ → CO₂ + 2 H₂O(l) tiene <span class="data">ΔH° = −890 kJ</span>.<br><span style="font-size:12.5px;color:#6c7770">Invertir una reacción cambia el signo de ΔH. Respondé el valor (será positivo).</span>',
+      unit:'kJ', answer:890, tol:1,
+      why:'ΔH°(inversa) = <b>+890 kJ</b>. Lo que la combustión libera, la reacción inversa lo absorbe: por eso “fabricar” metano cuesta energía.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · biogás del establecimiento',
+      text:'Cerrá el problema: si el agua se formara como VAPOR en lugar de líquida, el calor liberado sería…',
+      context:'Datos: combustión con agua líquida <span class="data">ΔH° = −890 kJ</span> · vaporizar agua cuesta <span class="data">+44 kJ/mol</span> · se forman <span class="data">2 mol de H₂O</span>.',
+      options:['Menor: −890 + 2×44 = −802 kJ','Igual (−890 kJ)','Mayor: −890 − 88 = −978 kJ','Cero'],
+      answer:0,
+      why:'Dejar el agua como vapor “consume” 2 × 44 = 88 kJ que no se entregan: ΔH° = −890 + 88 = <b>−802 kJ</b>. El estado de agregación de los productos cambia el resultado.' },
+  ],
+
+  /* ---------- EQUILIBRIO QUÍMICO ---------- */
+  eq:[
+    { kind:'mc', label:'Reversibilidad',
+      text:'¿Cuál de estos procesos es una reacción REVERSIBLE?',
+      options:['Síntesis de amoníaco: N₂ + 3 H₂ ⇌ 2 NH₃','Combustión de celulosa',
+               'Fotosíntesis','Pardeamiento enzimático de una manzana'],
+      answer:0,
+      why:'La síntesis de NH₃ (Haber-Bosch) ocurre en <b>ambos sentidos</b> y alcanza equilibrio. Combustión, fotosíntesis y pardeamiento son irreversibles en la práctica.' },
+    { kind:'mc', label:'Expresión de Kc',
+      text:'Para N₂(g) + 3 H₂(g) ⇌ 2 NH₃(g), la expresión de Kc es…',
+      options:['[NH₃]² / ([N₂]·[H₂]³)','[N₂]·[H₂]³ / [NH₃]²','[NH₃] / ([N₂]·[H₂])','[NH₃]² · [N₂] · [H₂]³'],
+      answer:0,
+      why:'<b>Productos sobre reactivos</b>, cada uno elevado a su coeficiente: [NH₃]² arriba, [N₂]·[H₂]³ abajo.' },
+    { kind:'mc', label:'Sistemas heterogéneos',
+      text:'Para BaCO₃(s) ⇌ BaO(s) + CO₂(g), ¿cuál es la expresión de Kc?',
+      options:['Kc = [CO₂]','Kc = [BaO]·[CO₂]/[BaCO₃]','Kc = [CO₂]/[BaCO₃]','Kc = 1/[CO₂]'],
+      answer:0,
+      why:'Los <b>sólidos puros no entran</b> en Kc (su “concentración” es constante). Solo queda el gas: Kc = [CO₂].' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué caracteriza a un sistema que ALCANZÓ el equilibrio químico?',
+      options:['Las concentraciones netas dejan de cambiar (pero las reacciones siguen)','Las reacciones se detienen por completo','Reactivos y productos quedan en cantidades iguales','Se agota el reactivo limitante'],
+      answer:0,
+      why:'Equilibrio = <b>dinámico</b>: directa e inversa siguen ocurriendo a igual velocidad, por eso las concentraciones netas quedan constantes. No implica cantidades iguales.' },
+    { kind:'mc', label:'Q vs K',
+      text:'Si el cociente de reacción Q es MENOR que Kc, el sistema…',
+      options:['Avanza hacia la derecha (forma productos)','Avanza hacia la izquierda','Ya está en equilibrio','Se detiene'],
+      answer:0,
+      why:'Q < Kc → “faltan productos” respecto del equilibrio → la reacción avanza <b>hacia la derecha</b> hasta que Q = Kc. Comparar Q con K es el método general.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Qué efecto tiene un CATALIZADOR sobre el equilibrio?',
+      options:['Acelera llegar al equilibrio, pero no cambia su posición ni Kc','Desplaza el equilibrio hacia productos','Aumenta Kc','Disminuye la temperatura'],
+      answer:0,
+      why:'El catalizador acelera <b>ambas</b> reacciones por igual: se llega antes al mismo equilibrio. <b>Kc solo cambia con la temperatura</b>.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · Haber-Bosch',
+      text:'En un tanque a 1000 K, en el equilibrio: [NH₃] = 0,100 M, [N₂] = 1,050 M, [H₂] = 1,600 M. Paso 1: calculá el numerador [NH₃]².',
+      unit:'M²', answer:0.01, tol:0.0005,
+      why:'0,100² = <b>0,0100</b>. El coeficiente 2 de la ecuación se convierte en exponente 2 en la expresión.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · Haber-Bosch',
+      text:'Paso 2: calculá el denominador [N₂]·[H₂]³.',
+      context:'<span class="data">1,050 × 1,600³</span><br><span style="font-size:12.5px;color:#6c7770">1,600³ = 4,096</span>',
+      unit:'M⁴', answer:4.30, tol:0.05,
+      why:'1,050 × 4,096 = <b>4,30</b>. El error típico es olvidar el cubo del hidrógeno.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · Haber-Bosch',
+      text:'Cerrá el problema: Kc = 0,0100 / 4,30 = …',
+      options:['2,3 × 10⁻³','2,3 × 10³','0,43','4,3 × 10⁻²'],
+      answer:0,
+      why:'Kc = <b>2,3 × 10⁻³</b>. Un Kc chico te dice que, a 1000 K, el equilibrio está corrido hacia los reactivos: por eso la industria fuerza presión y recircula.' },
+    { kind:'mc', label:'Le Chatelier',
+      text:'Si en un equilibrio se RETIRA un producto, el sistema se desplaza…',
+      options:['Hacia la derecha — repone el producto','Hacia la izquierda','No se mueve','Kc disminuye'],
+      answer:0,
+      why:'El sistema contrarresta la perturbación: <b>forma más producto</b>. Ojo: Kc no cambia (solo cambia con la temperatura).' },
+  ],
+
+  /* ---------- REDOX ---------- */
+  rdx:[
+    { kind:'mc', label:'Concepto',
+      text:'La oxidación es…',
+      options:['Pérdida de electrones (el estado de oxidación sube)','Ganancia de electrones',
+               'Ganancia de oxígeno solamente','Pérdida de protones'],
+      answer:0,
+      why:'Oxidación = <b>pierde electrones</b> → estado de oxidación aumenta. Reducción es lo inverso. Regla memotécnica: “oxidación, cesión”.' },
+    { kind:'mc', label:'Hemiecuaciones',
+      text:'Fe³⁺(ac) → Fe²⁺(ac). ¿Qué ocurrió?',
+      options:['Reducción — ganó 1 electrón','Oxidación — perdió 1 electrón','Neutralización','Precipitación'],
+      answer:0,
+      why:'El estado de oxidación <b>baja</b> de +3 a +2: ganó 1 e⁻ → <b>reducción</b>.' },
+    { kind:'mc', label:'Hemiecuaciones',
+      text:'Al(s) → Al³⁺(ac). ¿Cuántos electrones intervienen y qué proceso es?',
+      options:['Pierde 3 e⁻ — oxidación','Gana 3 e⁻ — reducción','Pierde 1 e⁻ — oxidación','Gana 2 e⁻ — reducción'],
+      answer:0,
+      why:'De 0 a +3: <b>pierde 3 electrones</b> → oxidación. Al° → Al³⁺ + 3 e⁻.' },
+    { kind:'mc', label:'Estados de oxidación',
+      text:'En la mayoría de los compuestos (óxidos, sales, ácidos), el estado de oxidación del oxígeno es…',
+      options:['−2','+2','−1 siempre','0'],
+      answer:0,
+      why:'Regla general: O = <b>−2</b> (excepción principal: peróxidos, donde vale −1). Con esta regla y la suma = carga total, deducís el resto de los estados.' },
+    { kind:'mc', label:'Agentes',
+      text:'El agente REDUCTOR de una reacción es la especie que…',
+      options:['Se oxida: entrega electrones al otro','Se reduce','No cambia su estado de oxidación','Siempre es un metal noble'],
+      answer:0,
+      why:'El reductor <b>se oxida</b> (cede e⁻) y con eso reduce al otro. Es el espejo del agente oxidante: cada reacción redox tiene uno de cada.' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · suelos anegados',
+      text:'En suelos anegados ocurre: Fe²⁺ + MnO₄⁻ → Fe³⁺ + Mn²⁺ (medio ácido). ¿Qué especie se OXIDA?',
+      options:['Fe²⁺ — pasa de +2 a +3','MnO₄⁻ — el Mn baja','El oxígeno','El H⁺ del medio'],
+      answer:0,
+      why:'El hierro sube de +2 a +3: <b>pierde 1 e⁻ → se oxida</b>. En suelos anegados estas cuplas Fe/Mn controlan la disponibilidad de nutrientes.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · suelos anegados',
+      text:'En el MnO₄⁻ el Mn tiene estado de oxidación +7 y termina como Mn²⁺. ¿Cuántos electrones GANA cada Mn?',
+      unit:'e⁻', answer:5, tol:0.1,
+      why:'De +7 a +2: gana <b>5 electrones</b>. Por eso el permanganato es un oxidante tan fuerte.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · suelos anegados',
+      text:'Cerrá el problema: si cada Fe²⁺ entrega 1 e⁻ y cada MnO₄⁻ necesita 5 e⁻, ¿cuántos Fe²⁺ reaccionan por cada MnO₄⁻ en la ecuación balanceada?',
+      unit:'Fe²⁺', answer:5, tol:0.1,
+      why:'<b>5 Fe²⁺ + MnO₄⁻ + 8 H⁺ → 5 Fe³⁺ + Mn²⁺ + 4 H₂O</b>. Igualar electrones cedidos y ganados ES el método del ion-electrón.' },
+    { kind:'mc', label:'Agentes',
+      text:'En esa misma reacción, el agente OXIDANTE es…',
+      options:['MnO₄⁻ — provoca la oxidación del Fe²⁺ (él se reduce)','Fe²⁺','Fe³⁺','El agua'],
+      answer:0,
+      why:'El agente oxidante es el que <b>se reduce</b> (gana e⁻) y provoca la oxidación del otro: el <b>permanganato</b>.' },
+  ],
+
+  /* ---------- CELDAS ELECTROQUÍMICAS ---------- */
+  cel:[
+    { kind:'mc', label:'Concepto',
+      text:'En una celda galvánica (pila), el ÁNODO es el electrodo donde…',
+      options:['Ocurre la oxidación','Ocurre la reducción','Entra la corriente','Se acumulan los cationes'],
+      answer:0,
+      why:'Ánodo = <b>oxidación</b>; cátodo = reducción (vale para pilas y electrólisis). En la pila, el ánodo es el polo negativo.' },
+    { kind:'mc', label:'Espontaneidad',
+      text:'Una reacción redox es ESPONTÁNEA cuando el potencial de celda E° es…',
+      options:['Mayor que cero','Menor que cero','Igual a cero','Igual a Kc'],
+      answer:0,
+      why:'<b>E° > 0 ⇔ espontánea</b> (equivale a ΔG° < 0). Si E° < 0, la reacción ocurre en sentido inverso o requiere energía externa.' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Cuál es la diferencia esencial entre una celda GALVÁNICA y una ELECTROLÍTICA?',
+      options:['La galvánica genera electricidad de una reacción espontánea; la electrolítica usa electricidad para forzar una no espontánea','La galvánica usa metales y la electrolítica no','La electrolítica no tiene electrodos','Son lo mismo con distinto nombre'],
+      answer:0,
+      why:'Galvánica (pila): reacción <b>espontánea → corriente</b>. Electrolítica: <b>corriente → reacción forzada</b> (ej.: electrólisis del agua, galvanoplastia).' },
+    { kind:'mc', label:'Concepto',
+      text:'¿Para qué sirve el puente salino en una pila?',
+      options:['Cierra el circuito y mantiene la neutralidad eléctrica de las soluciones','Aporta los electrones','Acelera la reacción como un catalizador','Evita que la pila se caliente'],
+      answer:0,
+      why:'Sin puente salino las soluciones se cargan y la pila <b>se detiene</b>: sus iones migran para <b>neutralizar</b> cada compartimiento y cerrar el circuito iónico.' },
+    { kind:'mc', label:'Concepto',
+      text:'En una PILA, el polo positivo es…',
+      options:['El cátodo (donde ocurre la reducción)','El ánodo','El puente salino','Depende del metal'],
+      answer:0,
+      why:'En la pila: cátodo = reducción = polo <b>positivo</b>; ánodo = oxidación = negativo. (En la celda electrolítica las polaridades se invierten, pero cátodo sigue siendo reducción).' },
+    { kind:'scaffold-step', step:'1 de 3', label:'Problema · ¿espontánea?',
+      text:'Evaluá: Ca°(s) + Cd²⁺(ac) → Ca²⁺(ac) + Cd°(s). ¿Quién se oxida?',
+      context:'Datos: E°(Cd²⁺/Cd) = <span class="data">−0,403 V</span> · E°(Ca²⁺/Ca) = <span class="data">−2,868 V</span>',
+      options:['El Ca° — pasa a Ca²⁺ (es el ánodo)','El Cd²⁺','Ambos','Ninguno'],
+      answer:0,
+      why:'El calcio pasa de 0 a +2: <b>se oxida</b> → es el ánodo. El Cd²⁺ se reduce a Cd° → cátodo.' },
+    { kind:'scaffold-step', step:'2 de 3', label:'Problema · ¿espontánea?',
+      text:'Calculá E°(celda) = E°(cátodo) − E°(ánodo).',
+      context:'E°(celda) = (−0,403) − (−2,868)',
+      unit:'V', answer:2.465, tol:0.02,
+      why:'−0,403 + 2,868 = <b>+2,465 V</b>. Cuidado con los signos: restar un negativo es sumar.' },
+    { kind:'scaffold-step', step:'3 de 3', label:'Problema · ¿espontánea?',
+      text:'Cerrá el problema: con E° = +2,465 V, la reacción es…',
+      options:['Espontánea — E° > 0','No espontánea','En equilibrio','Imposible de determinar'],
+      answer:0,
+      why:'E° = +2,465 V > 0 → <b>espontánea</b> tal como está escrita. Este es el criterio que vas a usar en toda la unidad.' },
+  ]
+};
+
+/* ===================== ESTADO ===================== */
+/* ----- PERSISTENCIA (guardada en este dispositivo) ----- */
+const store = {
+  load(){ try{ return JSON.parse(localStorage.getItem('quimagro_v1')) || {}; }catch(e){ return {}; } },
+  save(d){ try{ localStorage.setItem('quimagro_v1', JSON.stringify(d)); }catch(e){} }
+};
+let saved = store.load();
+if(!saved.done) saved.done = {};
+let totalXP = saved.xp || 0;
+let streakVal = saved.streak || 0;
+function dayStr(offset){ const d=new Date(); d.setDate(d.getDate()+(offset||0)); return d.toISOString().slice(0,10); }
+function updateStreakOnComplete(){
+  const today=dayStr(0);
+  if(saved.lastDay===today) return;
+  streakVal = (saved.lastDay===dayStr(-1)) ? streakVal+1 : 1;
+  saved.lastDay=today; saved.streak=streakVal;
+  $('streak').textContent=streakVal;
+}
+
+let curUnit=null, idx=0, lives=5, xp=0, answered=false, currentSel=null, list=[], currentOrder=[];
+let curveState=null, curveDrag=false;
+
+const $ = id => document.getElementById(id);
+function show(s){ ['screen-map','screen-lesson','screen-sum'].forEach(x=>$(x).classList.add('hidden')); $(s).classList.remove('hidden'); }
+function renderLives(){ let h=''; for(let i=0;i<5;i++) h+=`<span class="${i<lives?'':'dead'}">&#10084;</span>`; $('lives').innerHTML=h; $('hptop').textContent=lives; }
+
+/* ----- MAP ----- */
+function renderMap(){
+  let h='';
+  UNITS.forEach((u,i)=>{
+    const side=i%2===0?'offset-l':'offset-r';
+    const playable=!!QUESTIONS[u.id];
+    let cls='disc ';
+    if(u.featured) cls+='active'; else if(u.status==='play') cls+='done'; else cls+='soon';
+    if(playable) cls+=' play';
+    const nodeCls = u.status==='soon' ? 'node is-soon '+side : 'node '+side;
+    h += `<div class="node-row"><button class="${nodeCls}" ${playable?`onclick="startLesson('${u.id}')"`:'disabled'}>
+      <div class="${cls}">${u.icon}</div>
+      <div class="node-lbl">${u.name}</div><div class="node-sub">${saved.done[u.id] ? u.sub.replace('jugar','✓ completada') : u.sub}</div>
+    </button></div>`;
+  });
+  $('path').innerHTML=h;
+}
+
+/* ----- FLOW ----- */
+function startLesson(uid){
+  curUnit=uid; list=QUESTIONS[uid]; idx=0; lives=5; xp=0;
+  $('xptop').textContent=totalXP; renderLives(); setProgress();
+  show('screen-lesson'); renderQuestion();
+}
+function quitLesson(){ curveState=null; show('screen-map'); }
+function setProgress(){ $('prog').style.width=(idx/list.length*100)+'%'; }
+
+function renderQuestion(){
+  answered=false; currentSel=null; curveState=null;
+  const q=list[idx];
+  const fb=$('fb'); fb.className='fb'; fb.innerHTML='';
+  const btn=$('actionBtn'); btn.className='btn check'; btn.textContent='Comprobar'; btn.disabled=true;
+  setProgress();
+
+  let html=`<div class="q-kind">${q.label}${q.step?` · paso ${q.step}`:''}</div>`;
+  html+=`<div class="q-text">${q.text}</div>`;
+  if(q.context) html+=`<div class="q-context">${q.context}</div>`;
+
+  const isMC = q.kind==='mc' || q.options;
+  if(q.kind==='curve'){
+    html+=buildCurveSVG(q);
+  } else if(isMC){
+    const tags=['A','B','C','D'];
+    currentOrder = q.options.map((_,i)=>i);
+    for(let i=currentOrder.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [currentOrder[i],currentOrder[j]]=[currentOrder[j],currentOrder[i]]; }
+    html+=`<div class="opts">`;
+    currentOrder.forEach((oi,i)=>{ html+=`<button class="opt" data-i="${i}" onclick="selectOpt(${i})"><span class="tag">${tags[i]}</span>${q.options[oi]}</button>`; });
+    html+=`</div>`;
+  } else {
+    html+=`<div class="numwrap"><input id="numIn" inputmode="decimal" placeholder="0" autocomplete="off" oninput="onNumInput()"><div class="unit-badge">${q.unit||''}</div></div>`;
+  }
+  $('qArea').innerHTML=html;
+
+  if(q.kind==='curve'){ initCurve(q); btn.disabled=false; }
+  if($('numIn')) setTimeout(()=>$('numIn').focus(),120);
+}
+
+/* ----- CURVE (leer la curva) ----- */
+const CV={W:320,H:248,x0:44,x1:306,y0:208,y1:14};
+function buildCurveSVG(q){
+  const sx=T=>CV.x0+(T/q.xmax)*(CV.x1-CV.x0);
+  const sy=S=>CV.y0-(S/q.ymax)*(CV.y0-CV.y1);
+  let g='';
+  // grid + ticks
+  for(let T=0;T<=q.xmax;T+=q.xmax/3){ const x=sx(T);
+    g+=`<line x1="${x.toFixed(1)}" y1="${CV.y1}" x2="${x.toFixed(1)}" y2="${CV.y0}" stroke="#EAEDE7" stroke-width="1"/>`;
+    g+=`<text x="${x.toFixed(1)}" y="${CV.y0+15}" font-size="10" text-anchor="middle" fill="#8a948c" font-family="ui-monospace,Menlo,monospace">${T}</text>`; }
+  for(let S=0;S<=q.ymax;S+=q.ymax/3){ const y=sy(S);
+    g+=`<line x1="${CV.x0}" y1="${y.toFixed(1)}" x2="${CV.x1}" y2="${y.toFixed(1)}" stroke="#EAEDE7" stroke-width="1"/>`;
+    g+=`<text x="${CV.x0-6}" y="${(y+3).toFixed(1)}" font-size="10" text-anchor="end" fill="#8a948c" font-family="ui-monospace,Menlo,monospace">${(+S.toFixed(2)).toString().replace('.',',')}</text>`; }
+  // axes
+  g+=`<line x1="${CV.x0}" y1="${CV.y0}" x2="${CV.x1}" y2="${CV.y0}" stroke="#b7c1b8" stroke-width="1.5"/>`;
+  g+=`<line x1="${CV.x0}" y1="${CV.y1}" x2="${CV.x0}" y2="${CV.y0}" stroke="#b7c1b8" stroke-width="1.5"/>`;
+  // curve
+  const poly=q.points.map(p=>`${sx(p[0]).toFixed(1)},${sy(p[1]).toFixed(1)}`).join(' ');
+  g+=`<polyline points="${poly}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  q.points.forEach(p=>{ g+=`<circle cx="${sx(p[0]).toFixed(1)}" cy="${sy(p[1]).toFixed(1)}" r="2.5" fill="var(--primary)"/>`; });
+  // target vertical line
+  const xL=sx(q.targetT); const startS=q.ymax/2; const hy=sy(startS);
+  g+=`<line x1="${xL.toFixed(1)}" y1="${CV.y1}" x2="${xL.toFixed(1)}" y2="${CV.y0}" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+  g+=`<text x="${xL.toFixed(1)}" y="${CV.y1+2}" font-size="10" text-anchor="middle" fill="var(--clay)" font-family="ui-monospace,Menlo,monospace">${q.targetT}°C</text>`;
+  // horizontal guide + true point (hidden)
+  g+=`<line id="curveGuideH" x1="${CV.x0}" y1="${hy.toFixed(1)}" x2="${xL.toFixed(1)}" y2="${hy.toFixed(1)}" stroke="var(--clay)" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>`;
+  g+=`<circle id="curveTrue" cx="${xL.toFixed(1)}" cy="${sy(q.answer).toFixed(1)}" r="5" fill="none" stroke="#16241E" stroke-width="2" opacity="0"/>`;
+  // handle + readout
+  g+=`<circle id="curveHandle" cx="${xL.toFixed(1)}" cy="${hy.toFixed(1)}" r="11" fill="var(--clay)" stroke="#fff" stroke-width="2.5"/>`;
+  g+=`<text id="curveRead" x="${(xL+10).toFixed(1)}" y="${(hy-9).toFixed(1)}" font-size="13" font-weight="600" fill="#16241E" font-family="ui-monospace,Menlo,monospace">≈ ${startS.toFixed(q.dec||0).replace('.',',')} ${q.yUnit}</text>`;
+  g+=`<text x="${((CV.x0+CV.x1)/2).toFixed(1)}" y="${CV.H-4}" font-size="10" text-anchor="middle" fill="#6c7770">${q.xlabel}</text>`;
+  return `<div class="curve-wrap"><svg id="curveSvg" viewBox="0 0 ${CV.W} ${CV.H}" style="width:100%;touch-action:none;display:block">${g}</svg></div>
+          <div class="curve-hint">Solubilidad (g / 100 g agua) en el eje vertical · arrastrá el punto naranja</div>`;
+}
+function initCurve(q){
+  const sy=S=>CV.y0-(S/q.ymax)*(CV.y0-CV.y1);
+  const invS=py=>(CV.y0-py)/(CV.y0-CV.y1)*q.ymax;
+  curveState={q,sy,invS,S:q.ymax/2,locked:false};
+  const svg=$('curveSvg');
+  svg.addEventListener('pointerdown', e=>{ if(curveState.locked) return; curveDrag=true; curveSetS(curveYToS(e.clientY)); e.preventDefault(); });
+}
+function curveYToS(clientY){
+  const svg=$('curveSvg'); const r=svg.getBoundingClientRect();
+  const svgY=(clientY-r.top)/r.height*CV.H; return curveState.invS(svgY);
+}
+function curveSetS(S){
+  const cs=curveState; if(!cs) return;
+  S=Math.max(0,Math.min(cs.q.ymax,S)); cs.S=S;
+  const py=cs.sy(S);
+  $('curveHandle').setAttribute('cy',py.toFixed(1));
+  const gh=$('curveGuideH'); gh.setAttribute('y1',py.toFixed(1)); gh.setAttribute('y2',py.toFixed(1));
+  const rd=$('curveRead'); rd.setAttribute('y', Math.max(20,Math.min(204,py-9)).toFixed(1));
+  rd.textContent='≈ '+S.toFixed(cs.q.dec||0).replace('.',',')+' '+cs.q.yUnit;
+}
+window.addEventListener('pointermove', e=>{ if(curveDrag && curveState && !curveState.locked) curveSetS(curveYToS(e.clientY)); });
+window.addEventListener('pointerup', ()=>{ curveDrag=false; });
+
+/* ----- ANSWERS ----- */
+function selectOpt(i){
+  if(answered) return;
+  currentSel=i;
+  document.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel', +o.dataset.i===i));
+  $('actionBtn').disabled=false;
+}
+function onNumInput(){
+  const v=$('numIn').value.replace(',','.').trim();
+  $('actionBtn').disabled=!(v!=='' && !isNaN(parseFloat(v)));
+}
+function onAction(){ answered ? advance() : checkAnswer(); }
+
+function checkAnswer(){
+  const q=list[idx]; const isMC = q.kind==='mc' || q.options; let correct=false, shown='';
+  if(q.kind==='curve'){
+    const S=curveState.S; correct=Math.abs(S-q.answer)<=q.tol; curveState.locked=true;
+    $('curveHandle').setAttribute('fill', correct?'var(--ok)':'var(--no)');
+    $('curveTrue').setAttribute('opacity','1');
+    shown='≈ '+String(q.answer).replace('.',',')+' '+q.yUnit;
+  } else if(isMC){
+    correct = currentOrder[currentSel]===q.answer;
+    document.querySelectorAll('.opt').forEach(o=>{ const i=+o.dataset.i; o.style.pointerEvents='none';
+      if(currentOrder[i]===q.answer) o.classList.add('correct'); else if(i===currentSel) o.classList.add('wrong'); });
+    shown=q.options[q.answer];
+  } else {
+    const val=parseFloat($('numIn').value.replace(',','.'));
+    correct = Math.abs(val-q.answer)<=(q.tol||0.001);
+    $('numIn').disabled=true; $('numIn').style.borderColor = correct?'var(--ok)':'var(--no)';
+    shown=String(q.answer).replace('.',',')+' '+(q.unit||'');
+  }
+  answered=true;
+  const fb=$('fb');
+  if(correct){
+    xp+=10; $('xptop').textContent=totalXP+xp; fb.className='fb ok show';
+    fb.innerHTML=`<div class="head">&#10003; ¡Correcto! +10 XP</div><div class="why">${q.why}</div>`;
+    $('actionBtn').className='btn next-ok';
+  } else {
+    lives=Math.max(0,lives-1); renderLives(); fb.className='fb no show';
+    fb.innerHTML=`<div class="head">&#10007; Respuesta: ${shown}</div><div class="why">${q.why}</div>`;
+    $('actionBtn').className='btn next-no';
+  }
+  $('actionBtn').textContent=(idx===list.length-1)?'Ver resultado':'Continuar';
+  $('actionBtn').disabled=false;
+  if(lives===0) setTimeout(()=>endLesson(false),0);
+}
+function advance(){
+  if(lives===0){ endLesson(false); return; }
+  idx++; if(idx>=list.length){ endLesson(true); return; } renderQuestion();
+}
+
+function endLesson(completed){
+  totalXP += xp; saved.xp = totalXP; $('xptop').textContent = totalXP;
+  if(completed){ saved.done[curUnit] = true; updateStreakOnComplete(); }
+  store.save(saved);
+  if(completed) $('prog').style.width='100%';
+  const correctCount=Math.round(xp/10);
+  const acc=Math.round(correctCount/list.length*100);
+  const uname=(UNITS.find(u=>u.id===curUnit)||{}).name||'';
+  const flask=`<svg width="92" height="100" viewBox="0 0 92 100" style="margin-bottom:18px">
+    <path d="M37 8 v26 L14 84 a8 8 0 0 0 7 12 h50 a8 8 0 0 0 7-12 L55 34 V8" fill="none" stroke="#16241E" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M27 64 L65 64 L74 80 a8 8 0 0 1 -7 12 H25 a8 8 0 0 1 -7-12 Z" fill="${completed?'#15795F':'#D7493A'}" opacity=".9"/>
+    <line x1="33" y1="8" x2="59" y2="8" stroke="#16241E" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="40" cy="74" r="3" fill="#fff" opacity=".7"/><circle cx="55" cy="82" r="2.5" fill="#fff" opacity=".6"/></svg>`;
+  const inner = completed ? `${flask}
+    <div class="sum-title">¡Unidad completa!</div>
+    <div class="sum-sub">Terminaste ${uname}</div>
+    <div class="stat-row">
+      <div class="stat xp"><div class="v">${xp}</div><div class="l">XP</div></div>
+      <div class="stat acc"><div class="v">${acc}%</div><div class="l">Aciertos</div></div>
+      <div class="stat hp"><div class="v">${lives}</div><div class="l">Vidas</div></div>
+    </div>
+    <button class="btn check" style="max-width:320px" onclick="renderMap();show('screen-map')">Volver al mapa</button>`
+  : `${flask}
+    <div class="sum-title gameover">Te quedaste sin vidas</div>
+    <div class="sum-sub">Repasá y volvé a intentar — sin penalización</div>
+    <div class="stat-row">
+      <div class="stat xp"><div class="v">${xp}</div><div class="l">XP</div></div>
+      <div class="stat acc"><div class="v">${correctCount}/${list.length}</div><div class="l">Acertadas</div></div>
+    </div>
+    <button class="btn check" style="max-width:320px" onclick="startLesson('${curUnit}')">Reintentar</button>`;
+  $('sumInner').innerHTML=inner; show('screen-sum');
+}
+
+/* init */
+$('streak').textContent = streakVal;
+$('xptop').textContent = totalXP;
+renderMap(); renderLives();
+</script>
+</body>
+</html>
