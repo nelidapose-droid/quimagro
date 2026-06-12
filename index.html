@@ -9,6 +9,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="QuimAgro">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <style>
   :root{
     --ink:#16241E; --paper:#F1F3EE; --paper-2:#E7EAE2;
@@ -898,6 +901,9 @@ function endLesson(completed){
     <button class="btn check" style="max-width:320px" onclick="startLesson('${curUnit}')">Reintentar</button>`;
   $('sumInner').innerHTML=inner; show('screen-sum');
 }
+
+/* offline: registrar service worker (solo funciona servido por https, ej. GitHub Pages) */
+if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
 
 /* init */
 $('streak').textContent = streakVal;
